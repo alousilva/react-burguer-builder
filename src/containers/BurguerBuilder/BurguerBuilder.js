@@ -5,6 +5,9 @@ import Burguer from '../../components/Burguer/Burguer';
 import BuildControls from '../../components/Burguer/BuildControls/BuildControls';
 import Modal from '../../components/UI/Modal/Modal';
 import OrderSummary from '../../components/Burguer/OrderSummary/OrderSummary';
+import withErrorHandler from '../../hoc/withErrorHandler/withErrorHandler';
+import Spinner from '../../components/UI/Spinner/Spinner';
+import axios from '../../axios-order';
 
 const INGREDIENT_PRICES = {
     salad: 0.2,
@@ -26,7 +29,8 @@ class BurguerBuilder extends Component {
             //this is the base price (for # ingredients = 0)
             totalPrice: 1,
             purchasable: false,
-            purchasing: false
+            purchasing: false,
+            loading: false
         }
     }
 
@@ -87,7 +91,33 @@ class BurguerBuilder extends Component {
     }
 
     purchaseContinueHandler = () => {
-        console.log("you continued");
+        //console.log("you continued");
+        this.setState({loading: true});
+        const order = {
+            ingredients: this.state.ingredients,
+            //to correct the decimal numbers
+            price: this.state.totalPrice.toFixed(2),
+            customer: {
+                name: 'Andre Silva',
+                address: {
+                    street: 'rua dsafdgre, 45',
+                    zipCode: '3434344',
+                    country: 'Portugal'    
+                },
+                email: 'teste@test.com'                
+            },
+            deliveryMethod: 'priority line'
+        }
+        //for firebase only we have to put .json at the end of the target
+        axios.post('/orders.json', order)
+        .then(response => {
+            console.log(response);
+            this.setState({loading: false, purchasing: false});
+        })
+        .catch(error => {
+            console.log(error);
+            this.setState({loading: false, purchasing: false});
+        });
     }
 
     render() {
@@ -97,15 +127,20 @@ class BurguerBuilder extends Component {
         for (let key in disabledInfo) {
             disabledInfo[key] = disabledInfo[key] <= 0;
         }
+        let orderSummary = <OrderSummary 
+            ingredients={this.state.ingredients}
+            purchaseCanceled={this.purchaseCancelHandler}
+            purchaseContinued={this.purchaseContinueHandler}
+            totalPrice={this.state.totalPrice} />
+
+        if (this.state.loading){
+            orderSummary = <Spinner />
+        }
+
         return(
             <Aux>
                 <Modal show={this.state.purchasing} modalClosed={this.purchaseCancelHandler}>
-                    <OrderSummary 
-                        ingredients={this.state.ingredients}
-                        purchaseCanceled={this.purchaseCancelHandler}
-                        purchaseContinued={this.purchaseContinueHandler}
-                        totalPrice={this.state.totalPrice}
-                        />
+                    {orderSummary}
                 </Modal>
                 <Burguer ingredients={this.state.ingredients}/>
                 <BuildControls
@@ -120,4 +155,4 @@ class BurguerBuilder extends Component {
     }
 }
 
-export default BurguerBuilder;
+export default withErrorHandler(BurguerBuilder, axios);
