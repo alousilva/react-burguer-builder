@@ -20,18 +20,25 @@ class BurguerBuilder extends Component {
     constructor(props){
         super(props);
         this.state = {
-            ingredients: {
-                salad: 0,
-                bacon: 0,
-                cheese: 0,
-                meat: 0
-            },
+            ingredients: null,
             //this is the base price (for # ingredients = 0)
             totalPrice: 1,
             purchasable: false,
             purchasing: false,
-            loading: false
+            loading: false,
+            error: false
         }
+    }
+
+    componentDidMount () {
+        console.log(this.props)
+        axios.get("https://react-my-burguer-e3d22.firebaseio.com/ingredients.json")
+            .then(response => {
+                this.setState({ingredients: response.data});
+            })
+            .catch(error => {
+                this.setState({error: true});
+            });
     }
 
     updatePurchaseState (ingredients) {
@@ -92,31 +99,44 @@ class BurguerBuilder extends Component {
 
     purchaseContinueHandler = () => {
         //console.log("you continued");
-        this.setState({loading: true});
-        const order = {
-            ingredients: this.state.ingredients,
-            //to correct the decimal numbers
-            price: this.state.totalPrice.toFixed(2),
-            customer: {
-                name: 'Andre Silva',
-                address: {
-                    street: 'rua dsafdgre, 45',
-                    zipCode: '3434344',
-                    country: 'Portugal'    
-                },
-                email: 'teste@test.com'                
-            },
-            deliveryMethod: 'priority line'
+        // this.setState({loading: true});
+        // const order = {
+        //     ingredients: this.state.ingredients,
+        //     //to correct the decimal numbers
+        //     price: this.state.totalPrice.toFixed(2),
+        //     customer: {
+        //         name: 'Andre Silva',
+        //         address: {
+        //             street: 'rua dsafdgre, 45',
+        //             zipCode: '3434344',
+        //             country: 'Portugal'    
+        //         },
+        //         email: 'teste@test.com'                
+        //     },
+        //     deliveryMethod: 'priority line'
+        // }
+        // //for firebase only we have to put .json at the end of the target
+        // axios.post('/orders.json', order)
+        // .then(response => {
+        //     console.log(response);
+        //     this.setState({loading: false, purchasing: false});
+        // })
+        // .catch(error => {
+        //     console.log(error);
+        //     this.setState({loading: false, purchasing: false});
+        // });
+        
+        const queryParams = [];
+
+        for (let i in this.state.ingredients) {
+            queryParams.push(encodeURIComponent(i) + '=' + encodeURIComponent(this.state.ingredients[i]));
         }
-        //for firebase only we have to put .json at the end of the target
-        axios.post('/orders.json', order)
-        .then(response => {
-            console.log(response);
-            this.setState({loading: false, purchasing: false});
-        })
-        .catch(error => {
-            console.log(error);
-            this.setState({loading: false, purchasing: false});
+
+        const queryString = queryParams.join('&');
+
+        this.props.history.push({
+            pathname: '/checkout',
+            search: '?' + queryString
         });
     }
 
@@ -127,11 +147,30 @@ class BurguerBuilder extends Component {
         for (let key in disabledInfo) {
             disabledInfo[key] = disabledInfo[key] <= 0;
         }
-        let orderSummary = <OrderSummary 
-            ingredients={this.state.ingredients}
-            purchaseCanceled={this.purchaseCancelHandler}
-            purchaseContinued={this.purchaseContinueHandler}
-            totalPrice={this.state.totalPrice} />
+
+        let orderSummary = null;
+
+        let burguer = this.state.error ? <p>Ingredients can't be loaded</p> : <Spinner />;
+
+        if(this.state.ingredients) {
+            burguer = (
+                <Aux>
+                    <Burguer ingredients={this.state.ingredients}/>
+                    <BuildControls
+                        ingredientAdded={this.addIngredientHandler}
+                        ingredientRemoved={this.removeIngredientHandler}
+                        disabled={disabledInfo}
+                        purchasable={this.state.purchasable}
+                        ordered={this.purchaseHandler}
+                        price={this.state.totalPrice} />
+                </Aux>
+            );
+            orderSummary = <OrderSummary 
+                ingredients={this.state.ingredients}
+                purchaseCanceled={this.purchaseCancelHandler}
+                purchaseContinued={this.purchaseContinueHandler}
+                totalPrice={this.state.totalPrice} />           
+        }
 
         if (this.state.loading){
             orderSummary = <Spinner />
@@ -142,14 +181,7 @@ class BurguerBuilder extends Component {
                 <Modal show={this.state.purchasing} modalClosed={this.purchaseCancelHandler}>
                     {orderSummary}
                 </Modal>
-                <Burguer ingredients={this.state.ingredients}/>
-                <BuildControls
-                    ingredientAdded={this.addIngredientHandler}
-                    ingredientRemoved={this.removeIngredientHandler}
-                    disabled={disabledInfo}
-                    purchasable={this.state.purchasable}
-                    ordered={this.purchaseHandler}
-                    price={this.state.totalPrice} />
+                {burguer}
             </Aux>
         );
     }
