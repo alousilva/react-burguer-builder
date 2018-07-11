@@ -8,7 +8,7 @@ import OrderSummary from '../../components/Burguer/OrderSummary/OrderSummary';
 import withErrorHandler from '../../hoc/withErrorHandler/withErrorHandler';
 import Spinner from '../../components/UI/Spinner/Spinner';
 import axios from '../../axios-order';
-import * as actionTypes from '../../store/actions';
+import * as actions from '../../store/actions/index';
 
 class BurguerBuilder extends Component {
     constructor(props){
@@ -18,14 +18,15 @@ class BurguerBuilder extends Component {
             // //this is the base price (for # ingredients = 0)
             // totalPrice: 1,
             // purchasable: false,
-            purchasing: false,
-            loading: false,
-            error: false
+            purchasing: false
+            // loading: false,
+            // error: false
         }
     }
 
     componentDidMount () {
-        console.log(this.props)
+        console.log(this.props);
+        this.props.onInitIngredients();
         // axios.get("https://react-my-burguer-e3d22.firebaseio.com/ingredients.json")
         //     .then(response => {
         //         this.setState({ingredients: response.data});
@@ -105,6 +106,7 @@ class BurguerBuilder extends Component {
         //     pathname: '/checkout',
         //     search: '?' + queryString
         // });
+        this.props.onInitPurchase();
         this.props.history.push('/checkout');
     }
 
@@ -118,7 +120,7 @@ class BurguerBuilder extends Component {
 
         let orderSummary = null;
 
-        let burguer = this.state.error ? <p>Ingredients can't be loaded</p> : <Spinner />;
+        let burguer = this.props.error ? <p>Ingredients can't be loaded</p> : <Spinner />;
 
         if(this.props.ings) {
             burguer = (
@@ -157,15 +159,18 @@ class BurguerBuilder extends Component {
 
 const matStateToProps = state => {
     return {
-        ings: state.ingredients,
-        price: state.totalPrice
+        ings: state.burguerBuilder.ingredients,
+        price: state.burguerBuilder.totalPrice,
+        error: state.burguerBuilder.error
     }
 }
 
 const madDispatchToProps = dispatch => {
     return {
-        onIngredientAdded: (ingName) => dispatch({type: actionTypes.ADD_INGREDIENT, ingredientName: ingName}),
-        onIngredientRemoved: (ingName) => dispatch({type: actionTypes.REMOVE_INGREDIENT, ingredientName: ingName}),
+        onIngredientAdded: (ingName) => dispatch(actions.addIngredient(ingName)),
+        onIngredientRemoved: (ingName) => dispatch(actions.removeIngredient(ingName)),
+        onInitIngredients: () => dispatch(actions.initIngredients()),
+        onInitPurchase: () => dispatch(actions.purchaseInit())
     }
 }
 
