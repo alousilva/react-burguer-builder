@@ -10,7 +10,8 @@ import Spinner from '../../components/UI/Spinner/Spinner';
 import axios from '../../axios-order';
 import * as actions from '../../store/actions/index';
 
-class BurguerBuilder extends Component {
+// addded export keyword to test this container in BurguerBuilder.test.js
+export class BurguerBuilder extends Component {
     constructor(props){
         super(props);
         this.state = {
