@@ -23,11 +23,11 @@ export const purchaseBurguerStart = () => {
     };
 };
 
-export const purchaseBurguer = (orderData) => {
+export const purchaseBurguer = (orderData, token) => {
     return dispatch => {
         dispatch(purchaseBurguerStart());
         //for firebase only we have to put .json at the end of the target
-        axios.post('/orders.json', orderData)
+        axios.post('/orders.json?auth=' + token, orderData)
         .then(response => {
             console.log(response);
             dispatch(purchaseBurguerSuccess(response.data.name, orderData));
@@ -65,10 +65,11 @@ export const fetchOrdersStart = () => {
     };
 };
 
-export const fecthOrders = () => {
+export const fecthOrders = (token, userId) => {
     return dispatch => {
         dispatch(fetchOrdersStart());
-        axios.get('/orders.json')
+        const queryParams = '?auth=' + token + '&orderBy="userId"&equalTo="' + userId + '"'; 
+        axios.get('/orders.json' + queryParams)
             .then(res => {
                 console.log(res.data);
                 const fetchedOrders = [];
